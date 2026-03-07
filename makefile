@@ -69,13 +69,16 @@ cc:
 mi:
 	@poetry run radon mi $(PY_SRCS)
 	@# QUALITY GATE: проваливаем, если есть MI < $(RADON_MIN_MI)
-	@MI_BAD=$$(radon mi $(PY_SRCS) | awk '{print $$NF}' | awk -F: '{print $$NF}' | awk '$$1+0<$(RADON_MIN_MI){print}'); \
-	if [ -n "$$MI_BAD" ]; then \
+	@if poetry run radon mi $(PY_SRCS) \
+		| grep -oE '\([0-9]+\.[0-9]+\)' \
+		| tr -d '()' \
+		| awk '$$1+0 < $(RADON_MIN_MI) {exit 1}'; then \
+		echo "✅ Radon MI: все файлы с MI >= $(RADON_MIN_MI)"; \
+	else \
 		echo "❌ Radon MI: найден MI < $(RADON_MIN_MI)"; \
 		exit 1; \
-	else \
-		echo "✅ Radon MI: все файлы с MI >= $(RADON_MIN_MI)"; \
 	fi
+	
 # Метрика халстеда
 hal:
 	poetry run radon hal $(PY_SRCS)
