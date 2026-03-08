@@ -26,9 +26,9 @@ class Article(Base):
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     category_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("category.id", ondelete="SET NULL"), nullable=True
+        ForeignKey("categories.id", ondelete="SET NULL"), nullable=True
     )
     author: Mapped[User] = relationship("User", back_populates="articles")
     category: Mapped[Category] = relationship("Category", back_populates="articles")
 
-    __table_args__ = Index("ix_articles_search_vector", "searct_vector", postgresql_ising="gin")
+    __table_args__ = (Index("ix_articles_search_vector", "search_vector", postgresql_using="gin"),)

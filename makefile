@@ -11,7 +11,7 @@ RADON_MIN_MI=65
 # Служебные цели
 # ===============================
 
-.PHONY: help install lint fmt type security cc mi hal raw check
+.PHONY: help install lint fmt type security cc mi hal raw check migrate makemigrations
 
 help:
 	@echo "Доступные цели:"
@@ -78,7 +78,7 @@ mi:
 		echo "❌ Radon MI: найден MI < $(RADON_MIN_MI)"; \
 		exit 1; \
 	fi
-	
+
 # Метрика халстеда
 hal:
 	poetry run radon hal $(PY_SRCS)
@@ -91,3 +91,9 @@ raw:
 # ===============================
 # Локальный быстрый прогон с автофиксом Ruff
 check: lint fmt type security cc mi hal raw
+
+migrate: 
+	PYTHONPATH=src poetry run alembic upgrade head
+
+makemigrations: 
+	PYTHONPATH=src poetry run alembic revision --autogenerate -m "$(msg)"
