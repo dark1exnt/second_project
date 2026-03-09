@@ -32,3 +32,15 @@ class Article(Base):
     category: Mapped[Category] = relationship("Category", back_populates="articles")
 
     __table_args__ = (Index("ix_articles_search_vector", "search_vector", postgresql_using="gin"),)
+
+
+class DeletedArticle(Base):
+    __tablename__ = "deleted_articles"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    original_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    image_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    author_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    category_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
