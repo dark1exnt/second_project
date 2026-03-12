@@ -8,8 +8,8 @@ from starlette.responses import JSONResponse
 from app.core.security import decode_access_token
 
 PUBLIC_PATHS = {
-    "/api/v1/auth/register",
-    "/api/v1/auth/login",
+    "/auth/register",
+    "/auth/login",
     "/docs",
     "/redoc",
     "/openapi.json",
