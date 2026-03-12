@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.models.article import Article, DeletedArticle
 from app.models.category import Category
 from app.schemas.article import ArticleUpdate
+from app.schemas.category import CategoryUpdate
 
 
 class ArticleRepository:
@@ -113,13 +114,29 @@ class CategoryRepository:
         result = await self.db.execute(select(Category).order_by(Category.name))
         return list(result.scalars().all())
 
+    async def get_by_slug(self, slug: str) -> Category | None:
+        result = await self.db.execute(select(Category).where(Category.slug == slug))
+        return result.scalar_one_or_none()
+
     async def get_by_id(self, category_id: uuid.UUID) -> Category | None:
         result = await self.db.execute(select(Category).where(Category.id == category_id))
         return result.scalar_one_or_none()
 
-    async def create(self, name: str) -> Category:
-        category = Category(name=name)
+    async def create(self, name: str, slug: str) -> Category:
+        category = Category(name=name, slug=slug)
         self.db.add(category)
         await self.db.flush()
         await self.db.refresh(category)
         return category
+
+    async def update(self, category: Category, data: CategoryUpdate) -> Category:
+        for key, value in data.model_dump(exclude_unset=True).items():
+            setattr(category, key, value)
+        self.db.add(category)
+        await self.db.flush()
+        await self.db.refresh(category)
+        return category
+
+    async def delete(self, category: Category) -> None:
+        await self.db.delete(category)
+        await self.db.flush()
