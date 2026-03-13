@@ -17,5 +17,4 @@ class Category(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     articles: Mapped[list[Article]] = relationship("Article", back_populates="category")

@@ -93,7 +93,10 @@ raw:
 check: lint fmt type security cc mi hal raw
 
 migrate: 
-	PYTHONPATH=src poetry run alembic upgrade head
+	PYTHONPATH=src POSTGRES_HOST=localhost poetry run alembic upgrade head
 
 makemigrations: 
-	PYTHONPATH=src poetry run alembic revision --autogenerate -m "$(msg)"
+	PYTHONPATH=src POSTGRES_HOST=localhost poetry run alembic revision --autogenerate -m "$(msg)"
+
+test:
+	PYTHONPATH=src POSTGRES_HOST=localhost poetry run pytest tests/ -v

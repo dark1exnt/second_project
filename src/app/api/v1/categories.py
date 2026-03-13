@@ -30,9 +30,12 @@ async def create_category(
     payload: CategoryCreate, db: AsyncSession = Depends(get_db)
 ) -> CategoryResponse:
     repo = CategoryRepository(db)
-    if await repo.get_by_slug(payload.slug):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Slug уже занят")
-    return await repo.create(name=payload.name, slug=payload.slug)
+    existing = await repo.get_by_name(payload.name)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Категория с таким именем уже существует"
+        )
+    return await repo.create(name=payload.name)
 
 
 @router.patch("/{category_id}", response_model=CategoryResponse)

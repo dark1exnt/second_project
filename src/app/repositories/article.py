@@ -117,16 +117,16 @@ class CategoryRepository:
         result = await self.db.execute(select(Category).order_by(Category.name))
         return list(result.scalars().all())
 
-    async def get_by_slug(self, slug: str) -> Category | None:
-        result = await self.db.execute(select(Category).where(Category.slug == slug))
+    async def get_by_name(self, name: str) -> Category | None:
+        result = await self.db.execute(select(Category).where(Category.name == name))
         return result.scalar_one_or_none()
 
     async def get_by_id(self, category_id: uuid.UUID) -> Category | None:
         result = await self.db.execute(select(Category).where(Category.id == category_id))
         return result.scalar_one_or_none()
 
-    async def create(self, name: str, slug: str) -> Category:
-        category = Category(name=name, slug=slug)
+    async def create(self, name: str) -> Category:
+        category = Category(name=name)
         self.db.add(category)
         await self.db.flush()
         await self.db.refresh(category)
