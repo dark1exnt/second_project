@@ -105,3 +105,20 @@ async def delete_article(
     if article.author_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа")
     await repo.soft_delete(article)
+
+
+@router.patch("/{article_id}", response_model=ArticleResponse)
+async def update_article(
+    article_id: uuid.UUID,
+    payload: ArticleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ArticleResponse:
+    repo = ArticleRepository(db)
+    article = await repo.get_by_id(article_id)
+    if not article:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Статья не найдена")
+    if article.author_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа")
+    article = await repo.update(article, payload)
+    return ArticleResponse.model_validate(article)
