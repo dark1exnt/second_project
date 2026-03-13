@@ -71,7 +71,10 @@ class ArticleRepository:
             {"title": title, "content": content, "id": str(article.id)},
         )
         await self.db.refresh(article)
-        return article
+        result = await self.db.execute(
+            select(Article).options(selectinload(Article.category)).where(Article.id == article.id)
+        )
+        return result.scalar_one()
 
     async def update(self, article: Article, data: ArticleUpdate) -> Article:
         update_data = data.model_dump(exclude_unset=True)

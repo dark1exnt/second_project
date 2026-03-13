@@ -20,7 +20,8 @@ dependencies = [
     "python-jose[cryptography] (>=3.5.0,<4.0.0)",
     "boto3 (>=1.42.63,<2.0.0)",
     "celery[rabbitmq] (>=5.6.2,<6.0.0)",
-    "pwdlib[argon2] (>=0.3.0,<0.4.0)"
+    "pwdlib[argon2] (>=0.3.0,<0.4.0)",
+    "python-multipart (>=0.0.22,<0.0.23)"
 ]
 
 [dependency-groups]

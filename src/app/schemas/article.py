@@ -16,6 +16,7 @@ class ArticleUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     content: str | None = Field(default=None, min_length=1)
     category_id: uuid.UUID | None = None
+    image_url: str | None = None
 
 
 class ArticleResponse(BaseModel):
@@ -32,9 +33,9 @@ class ArticleResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class PaginatedArticles(BaseModel):
+class ArticleListResponse(BaseModel):
     items: list[ArticleResponse]
     total: int
-    page_number: int
+    page: int
     page_size: int
     total_pages: int
