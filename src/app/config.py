@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import PostgresDsn, computed_field
+from pydantic import Field, PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False
     )
+
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
     # Application
     app_title: str = "Blog Marketplace API"
@@ -47,14 +49,16 @@ class Settings(BaseSettings):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def database_url(self) -> PostgresDsn:
-        return PostgresDsn.build(
-            scheme="postgresql+asyncpg",
-            username=self.postgres_user,
-            password=self.postgres_password,
-            host=self.postgres_host,
-            port=self.postgres_port,
-            path=self.postgres_db,
+    def database_url(self) -> str:
+        return str(
+            PostgresDsn.build(
+                scheme="postgresql+asyncpg",
+                username=self.postgres_user,
+                password=self.postgres_password,
+                host=self.postgres_host,
+                port=self.postgres_port,
+                path=self.postgres_db,
+            )
         )
 
     @computed_field  # type: ignore[prop-decorator]
