@@ -18,7 +18,7 @@ def mock_celery() -> Generator[None, None, None]:
 
 @pytest.fixture
 async def client(mock_celery) -> AsyncGenerator[AsyncClient, None]:
-    engine = create_async_engine(str(settings.database_url), poolclass=NullPool)
+    engine = create_async_engine(settings.database_url, poolclass=NullPool)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     
     async def override_get_db() ->  AsyncGenerator[AsyncSession, None]:
@@ -42,7 +42,7 @@ async def client(mock_celery) -> AsyncGenerator[AsyncClient, None]:
 
 @pytest.fixture
 async def second_client(mock_celery) -> AsyncGenerator[AsyncClient, None]:
-    engine = create_async_engine(str(settings.database_url), poolclass=NullPool)
+    engine = create_async_engine(settings.database_url, poolclass=NullPool)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     
     async def override_get_db() ->  AsyncGenerator[AsyncSession, None]:

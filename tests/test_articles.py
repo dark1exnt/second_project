@@ -179,7 +179,7 @@ async def test_update_article_forbidden(auth_client: AsyncClient, second_auth_cl
     category_id = await create_category(auth_client)
     article = await create_article(auth_client, category_id)
 
-    response = await second_auth_client.patch(f"/articles/{article["id"]}", json={"title": "test_update_article_forbidden"})
+    response = await second_auth_client.patch(f"/articles/{article['id']}", json={"title": "test_update_article_forbidden"})
     assert response.status_code == 403
 
 
