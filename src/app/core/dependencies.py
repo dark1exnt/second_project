@@ -14,7 +14,7 @@ async def get_current_user(
     access_token: str | None = Cookie(default=None), db: AsyncSession = Depends(get_db)
 ) -> User:
     credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials"
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверные учетные данные"
     )
 
     if access_token is None:
@@ -28,7 +28,10 @@ async def get_current_user(
     repo = UserRepository(db)
     user = await repo.get_by_id(uuid.UUID(user_id))
 
-    if user is None or not user.is_active:
+    if user is None:
         raise credentials_exception from None
+
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Неактивный пользователь")
 
     return user
