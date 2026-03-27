@@ -5,14 +5,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.article import Article, DeletedArticle
-from app.models.category import Category
 from app.schemas.article import ArticleUpdate
-from app.schemas.category import CategoryUpdate
 
 
 class ArticleRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
+
+    async def _get_article_with_category(self, article_id: uuid.UUID) -> Article | None:
+        result = await self.db.execute(
+            select(Article).options(selectinload(Article.category)).where(Article.id == article_id)
+        )
+        return result.scalar_one_or_none()
 
     async def get_list(
         self,
@@ -39,10 +43,7 @@ class ArticleRepository:
         return list(rows), total
 
     async def get_by_id(self, article_id: uuid.UUID) -> Article | None:
-        result = await self.db.execute(
-            select(Article).options(selectinload(Article.category)).where(Article.id == article_id)
-        )
-        return result.scalar_one_or_none()
+        return await self._get_article_with_category(article_id)
 
     async def create(
         self,
@@ -70,11 +71,10 @@ class ArticleRepository:
             ),
             {"title": title, "content": content, "id": str(article.id)},
         )
-        await self.db.refresh(article)
-        result = await self.db.execute(
-            select(Article).options(selectinload(Article.category)).where(Article.id == article.id)
-        )
-        return result.scalar_one()
+        loaded_article: Article | None = await self._get_article_with_category(article.id)
+        if loaded_article is None:
+            raise RuntimeError("Created article not found after flush")
+        return loaded_article
 
     async def update(self, article: Article, data: ArticleUpdate) -> Article:
         update_data = data.model_dump(exclude_unset=True)
@@ -92,8 +92,10 @@ class ArticleRepository:
                 ),
                 {"title": article.title, "content": article.content, "id": str(article.id)},
             )
-        await self.db.refresh(article)
-        return article
+        loaded_article: Article | None = await self._get_article_with_category(article.id)
+        if loaded_article is None:
+            raise RuntimeError("Updated article not found after flush")
+        return loaded_article
 
     async def soft_delete(self, article: Article) -> None:
         deleted = DeletedArticle(
@@ -106,40 +108,4 @@ class ArticleRepository:
         )
         self.db.add(deleted)
         await self.db.delete(article)
-        await self.db.flush()
-
-
-class CategoryRepository:
-    def __init__(self, db: AsyncSession) -> None:
-        self.db = db
-
-    async def get_all(self) -> list[Category]:
-        result = await self.db.execute(select(Category).order_by(Category.name))
-        return list(result.scalars().all())
-
-    async def get_by_name(self, name: str) -> Category | None:
-        result = await self.db.execute(select(Category).where(Category.name == name))
-        return result.scalar_one_or_none()
-
-    async def get_by_id(self, category_id: uuid.UUID) -> Category | None:
-        result = await self.db.execute(select(Category).where(Category.id == category_id))
-        return result.scalar_one_or_none()
-
-    async def create(self, name: str) -> Category:
-        category = Category(name=name)
-        self.db.add(category)
-        await self.db.flush()
-        await self.db.refresh(category)
-        return category
-
-    async def update(self, category: Category, data: CategoryUpdate) -> Category:
-        for key, value in data.model_dump(exclude_unset=True).items():
-            setattr(category, key, value)
-        self.db.add(category)
-        await self.db.flush()
-        await self.db.refresh(category)
-        return category
-
-    async def delete(self, category: Category) -> None:
-        await self.db.delete(category)
         await self.db.flush()
