@@ -1,9 +1,9 @@
 import uuid
 
-from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import BadRequestError, ConflictError, NotFoundError
 from app.core.logging import app_logger
 from app.models.category import Category
 from app.repositories.category import CategoryRepository
@@ -19,9 +19,7 @@ class CategoryService:
         category: Category | None = await self.category_repo.get_by_id(category_id)
         if category is None:
             app_logger.warning("Category not found", category_id=str(category_id))
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Категория не найдена"
-            )
+            raise NotFoundError("Категория не найдена")
         return category
 
     async def _ensure_category_name_unique(
@@ -40,9 +38,7 @@ class CategoryService:
             exclude_category_id=str(exclude_category_id) if exclude_category_id else None,
         )
 
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Категория с таким именем уже существует"
-        )
+        raise ConflictError("Категория с таким именем уже существует")
 
     async def get_categories(self) -> list[Category]:
         app_logger.info("Categories list requested")
@@ -86,9 +82,7 @@ class CategoryService:
         except IntegrityError:
             await self.session.rollback()
             logger.warning("Category update rejected: invalid data")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Некорректные данные категории"
-            ) from None
+            raise BadRequestError("Некорректные данные категории") from None
         except Exception:
             await self.session.rollback()
             logger.exception("Category update failed")

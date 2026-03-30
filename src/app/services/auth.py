@@ -1,8 +1,8 @@
 from contextlib import suppress
 
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import BadRequestError, UnauthorizedError
 from app.core.logging import app_logger
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
@@ -23,18 +23,14 @@ class AuthService:
         existing_user_by_email: User | None = await self.user_repo.get_by_email(payload.email)
         if existing_user_by_email is not None:
             logger.warning("User registration rejected: email already exists")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Email уже зарегистрирован"
-            )
+            raise BadRequestError("Email уже зарегистрирован")
 
         existing_user_by_username: User | None = await self.user_repo.get_by_username(
             payload.username
         )
         if existing_user_by_username is not None:
             logger.warning("User registration rejected: username already exists")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Имя пользователя уже занято"
-            )
+            raise BadRequestError("Имя пользователя уже занято")
 
         hashed_password: str = hash_password(payload.password)
 
@@ -66,15 +62,11 @@ class AuthService:
 
         if user is None or not verify_password(payload.password, user.hashed_password):
             logger.warning("User login rejected: invalid credentials")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Неправильный логин или пароль"
-            )
+            raise UnauthorizedError("Неправильный логин или пароль")
 
         if not user.is_active:
             logger.warning("User login rejected: inactive user", user_id=str(user.id))
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь неактивен"
-            )
+            raise BadRequestError("Пользователь неактивен")
 
         access_token: str = create_access_token(subject=str(user.id))
         logger.info("User login successfully", user_id=str(user.id))

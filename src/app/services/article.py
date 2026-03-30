@@ -1,10 +1,11 @@
 import io
 import uuid
 
-from fastapi import HTTPException, UploadFile, status
+from fastapi import UploadFile
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.logging import app_logger
 from app.models.article import Article
 from app.repositories.article import ArticleRepository
@@ -21,7 +22,7 @@ class ArticleService:
         article: Article | None = await self.article_repo.get_by_id(article_id)
         if article is None:
             app_logger.warning("Article not found", article_id=str(article_id))
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Статья не найдена")
+            raise NotFoundError("Статья не найдена")
         return article
 
     def _check_author(self, article: Article, current_user_id: uuid.UUID) -> None:
@@ -32,7 +33,7 @@ class ArticleService:
                 author_id=str(article.author_id),
                 current_user_id=str(current_user_id),
             )
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа")
+            raise ForbiddenError("Нет доступа")
 
     async def get_articles(
         self, page: int, page_size: int, search: str | None, category_id: uuid.UUID | None
@@ -76,9 +77,7 @@ class ArticleService:
         except IntegrityError:
             await self.session.rollback()
             logger.warning("Article create rejected: category not found")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Категория не найдена"
-            ) from None
+            raise BadRequestError("Категория не найдена") from None
         except Exception:
             await self.session.rollback()
             logger.exception("Article create failed")
@@ -143,9 +142,7 @@ class ArticleService:
         ext_map = {"image/png": "png", "image/webp": "webp", "image/jpeg": "jpg"}
         if file.content_type not in ext_map:
             logger.warning("Article image upload rejected: unsupported file type")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Неподдерживаемый тип файла"
-            )
+            raise BadRequestError("Неподдерживаемый тип файла")
         ext: str = ext_map[file.content_type]
 
         image_url: str = s3_service.upload_image(
