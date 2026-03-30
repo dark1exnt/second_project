@@ -5,6 +5,7 @@ from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import app_logger
 from app.models.article import Article
 from app.repositories.article import ArticleRepository
 from app.schemas.article import ArticleUpdate
@@ -19,28 +20,50 @@ class ArticleService:
     async def _get_article_or_404(self, article_id: uuid.UUID) -> Article:
         article: Article | None = await self.article_repo.get_by_id(article_id)
         if article is None:
+            app_logger.warning("Article not found", article_id=str(article_id))
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Статья не найдена")
         return article
 
     def _check_author(self, article: Article, current_user_id: uuid.UUID) -> None:
         if article.author_id != current_user_id:
+            app_logger.warning(
+                "Forbidden article access",
+                article_id=str(article.id),
+                author_id=str(article.author_id),
+                current_user_id=str(current_user_id),
+            )
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа")
 
     async def get_articles(
         self, page: int, page_size: int, search: str | None, category_id: uuid.UUID | None
     ) -> tuple[list[Article], int]:
+        logger = app_logger.bind(
+            page=page,
+            page_size=page_size,
+            search=search,
+            category_id=str(category_id) if category_id else None,
+        )
+        logger.info("Articles list requested")
+
         articles, total = await self.article_repo.get_list(
             page_number=page, page_size=page_size, search=search, category_id=category_id
         )
+        logger.info("Articles list loaded", total=total)
         return articles, total
 
     async def get_article(self, article_id: uuid.UUID) -> Article:
+        app_logger.info("Article requested", article_id=str(article_id))
         article: Article = await self._get_article_or_404(article_id)
         return article
 
     async def create_article(
         self, title: str, content: str, author_id: uuid.UUID, category_id: uuid.UUID | None
     ) -> Article:
+        logger = app_logger.bind(
+            author_id=str(author_id), category_id=str(category_id) if category_id else None
+        )
+        logger.info("Article create started", title=title)
+
         try:
             article = await self.article_repo.create(
                 title=title,
@@ -50,33 +73,45 @@ class ArticleService:
                 image_url=None,
             )
             await self.session.commit()
-            return article
         except IntegrityError:
             await self.session.rollback()
+            logger.warning("Article create rejected: category not found")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Категория не найдена"
             ) from None
         except Exception:
             await self.session.rollback()
+            logger.exception("Article create failed")
             raise
+
+        logger.info("Article create successfully", article_id=str(article.id))
+        return article
 
     async def update_article(
         self, article_id: uuid.UUID, payload: ArticleUpdate, current_user_id: uuid.UUID
     ) -> Article:
-        article: Article = await self._get_article_or_404(article_id)
+        logger = app_logger.bind(article_id=str(article_id), current_user_id=str(current_user_id))
+        logger.info("Article update started")
 
+        article: Article = await self._get_article_or_404(article_id)
         self._check_author(article, current_user_id)
+
         try:
             updated_article: Article = await self.article_repo.update(article, payload)
             await self.session.commit()
-            return updated_article
         except Exception:
             await self.session.rollback()
+            logger.exception("Article update failed")
             raise
 
-    async def delete_article(self, article_id: uuid.UUID, current_user_id: uuid.UUID) -> None:
-        article: Article = await self._get_article_or_404(article_id)
+        logger.info("Article update successfully", article_id=str(updated_article.id))
+        return updated_article
 
+    async def delete_article(self, article_id: uuid.UUID, current_user_id: uuid.UUID) -> None:
+        logger = app_logger.bind(article_id=str(article_id), current_user_id=str(current_user_id))
+        logger.info("Article delete started")
+
+        article: Article = await self._get_article_or_404(article_id)
         self._check_author(article, current_user_id)
 
         try:
@@ -84,19 +119,30 @@ class ArticleService:
             await self.session.commit()
         except Exception:
             await self.session.rollback()
+            logger.exception("Article delete failed")
             raise
+
+        logger.info("Article delete successfully", article_id=str(article_id))
 
     async def upload_article_image(
         self, article_id: uuid.UUID, file: UploadFile, current_user_id: uuid.UUID
     ) -> Article:
-        article: Article = await self._get_article_or_404(article_id)
+        logger = app_logger.bind(
+            article_id=str(article_id),
+            current_user_id=str(current_user_id),
+            filename=file.filename,
+            content_type=file.content_type,
+        )
+        logger.info("Article image upload started")
 
+        article: Article = await self._get_article_or_404(article_id)
         self._check_author(article, current_user_id)
 
         contents: bytes = await file.read()
 
         ext_map = {"image/png": "png", "image/webp": "webp", "image/jpeg": "jpg"}
         if file.content_type not in ext_map:
+            logger.warning("Article image upload rejected: unsupported file type")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Неподдерживаемый тип файла"
             )
@@ -111,7 +157,14 @@ class ArticleService:
                 article, ArticleUpdate(image_url=image_url)
             )
             await self.session.commit()
-            return updated_article
         except Exception:
             await self.session.rollback()
+            logger.exception("Article image upload failed")
             raise
+
+        logger.info(
+            "Article image uploaded successfully",
+            article_id=str(updated_article.id),
+            image_url=image_url,
+        )
+        return updated_article
