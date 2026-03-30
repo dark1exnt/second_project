@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     # Application
     app_title: str = "Blog Marketplace API"
     app_debug: bool = False
+    app_env: str = "dev"
+    log_level: str = "INFO"
+    log_dir: str = "logs"
+    log_rotation: str = "10 MB"
+    log_retention: str = "7 days"
+    log_enqueue: bool = True
 
     # PostgreSQL
     postgres_host: str = "postgres"
@@ -68,6 +74,11 @@ class Settings(BaseSettings):
             f"amqp://{self.rabbitmq_user}:{self.rabbitmq_password}"
             f"@{self.rabbitmq_host}:{self.rabbitmq_port}//"
         )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.lower() == "prod"
 
 
 @lru_cache
