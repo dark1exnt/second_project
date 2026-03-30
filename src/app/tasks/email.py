@@ -5,6 +5,7 @@ import smtplib
 from celery import Task
 
 from app.config import settings
+from app.core.logging import app_logger
 from app.tasks.celery_app import celery_app
 
 
@@ -15,12 +16,17 @@ from app.tasks.celery_app import celery_app
     default_retry_delay=60,
 )
 def send_registration_email(self: Task, to_email: str, username: str) -> None:
+    logger = app_logger.bind(
+        task_name="send_registration_email", to_email=to_email, username=username
+    )
+    logger.info("Registration email sending started")
+
     subject = "Welcome to Blog Marketplace"
     body = f"""
     <html>
         <body>
-            Добро пожаловать, {username}!
-            Вы успешно зарегистрировались на Blog Marketplace.
+            <p>Добро пожаловать, {username}!</p>
+            <p>Вы успешно зарегистрировались на Blog Marketplace.</p>
         </body>
     </html>
     """
@@ -34,7 +40,11 @@ def send_registration_email(self: Task, to_email: str, username: str) -> None:
     try:
         with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
             server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
+            if settings.smtp_user and settings.smtp_password:
+                server.login(settings.smtp_user, settings.smtp_password)
             server.sendmail(settings.emails_from_email, to_email, msg.as_string())
     except Exception as exc:
+        logger.exception("Registration email sending failed")
         raise self.retry(exc=exc) from exc
+
+    logger.info("Registration email sent successfully")
