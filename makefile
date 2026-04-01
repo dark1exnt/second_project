@@ -11,7 +11,7 @@ RADON_MIN_MI=65
 # Служебные цели
 # ===============================
 
-.PHONY: help install lint fmt type security cc mi hal raw check migrate makemigrations
+.PHONY: help lint fmt type security cc mi hal raw check migrate makemigrations up down init bucket
 
 help:
 	@echo "Доступные цели:"
@@ -92,11 +92,24 @@ raw:
 # Локальный быстрый прогон с автофиксом Ruff
 check: lint fmt type security cc mi hal raw
 
-migrate: 
-	PYTHONPATH=src POSTGRES_HOST=localhost poetry run alembic upgrade head
+migrate:
+	docker compose exec api sh -c "alembic upgrade head"
 
-makemigrations: 
-	PYTHONPATH=src POSTGRES_HOST=localhost poetry run alembic revision --autogenerate -m "$(msg)"
+makemigrations:
+	docker compose exec api sh -c 'alembic revision --autogenerate -m "$(msg)"'
 
 test:
 	PYTHONPATH=src POSTGRES_HOST=localhost poetry run pytest tests/ -v
+
+up:
+	docker compose up -d --build
+
+down:
+	docker compose down
+
+bucket:
+	docker compose exec api python -c "import boto3; from botocore.client import Config; from app.config import settings; s3 = boto3.client('s3', endpoint_url=settings.s3_endpoint_url, aws_access_key_id=settings.s3_access_key, aws_secret_access_key=settings.s3_secret_key, region_name=settings.s3_region, config=Config(signature_version='s3v4')); bucket = settings.s3_bucket_name; existing = [b['Name'] for b in s3.list_buckets().get('Buckets', [])]; print(f'Bucket {bucket} already exists' if bucket in existing else f'Bucket {bucket} created'); None if bucket in existing else s3.create_bucket(Bucket=bucket)"
+
+init: up 
+	$(MAKE) migrate 
+	$(MAKE) bucket
