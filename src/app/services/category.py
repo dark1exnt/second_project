@@ -56,9 +56,7 @@ class CategoryService:
 
         try:
             category: Category = await self.category_repo.create(name=payload.name)
-            await self.session.commit()
         except Exception:
-            await self.session.rollback()
             logger.exception("Category create failed")
             raise
 
@@ -78,13 +76,10 @@ class CategoryService:
 
         try:
             updated_category: Category = await self.category_repo.update(category, payload)
-            await self.session.commit()
         except IntegrityError:
-            await self.session.rollback()
             logger.warning("Category update rejected: invalid data")
             raise BadRequestError("Некорректные данные категории") from None
         except Exception:
-            await self.session.rollback()
             logger.exception("Category update failed")
             raise
 
@@ -99,9 +94,7 @@ class CategoryService:
 
         try:
             await self.category_repo.delete(category)
-            await self.session.commit()
         except Exception:
-            await self.session.rollback()
             logger.exception("Category delete failed")
             raise
 

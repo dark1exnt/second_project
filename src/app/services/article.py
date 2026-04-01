@@ -73,13 +73,10 @@ class ArticleService:
                 category_id=category_id,
                 image_url=None,
             )
-            await self.session.commit()
         except IntegrityError:
-            await self.session.rollback()
             logger.warning("Article create rejected: category not found")
             raise BadRequestError("Категория не найдена") from None
         except Exception:
-            await self.session.rollback()
             logger.exception("Article create failed")
             raise
 
@@ -97,9 +94,7 @@ class ArticleService:
 
         try:
             updated_article: Article = await self.article_repo.update(article, payload)
-            await self.session.commit()
         except Exception:
-            await self.session.rollback()
             logger.exception("Article update failed")
             raise
 
@@ -115,9 +110,7 @@ class ArticleService:
 
         try:
             await self.article_repo.soft_delete(article)
-            await self.session.commit()
         except Exception:
-            await self.session.rollback()
             logger.exception("Article delete failed")
             raise
 
@@ -153,9 +146,7 @@ class ArticleService:
             updated_article: Article = await self.article_repo.update(
                 article, ArticleUpdate(image_url=image_url)
             )
-            await self.session.commit()
         except Exception:
-            await self.session.rollback()
             logger.exception("Article image upload failed")
             raise
 

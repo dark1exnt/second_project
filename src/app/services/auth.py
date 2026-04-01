@@ -40,9 +40,7 @@ class AuthService:
                 username=payload.username,
                 hashed_password=hashed_password,
             )
-            await self.session.commit()
         except Exception:
-            await self.session.rollback()
             logger.exception("User registration failed")
             raise
 
