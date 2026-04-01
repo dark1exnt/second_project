@@ -189,7 +189,7 @@ async def test_upload_article_image(auth_client: AsyncClient) -> None:
     article = await create_article(auth_client, category_id)
     article_id = article["id"]
 
-    with patch("app.api.v1.articles.s3_service.upload_image", return_value="https://s3/image.jpg"):
+    with patch("app.services.article.s3_service.upload_image", return_value="https://s3/image.jpg"):
         response = await auth_client.post(
             f"/articles/{article_id}/image",
             files={"file": ("image.jpg", b"fake image content", "image/jpeg")}
@@ -204,7 +204,7 @@ async def test_upload_image_forbidden(auth_client: AsyncClient, second_auth_clie
     article = await create_article(auth_client, category_id)
     article_id = article["id"]
 
-    with patch("app.api.v1.articles.s3_service.upload_image", return_value="https://s3/image.jpg"):
+    with patch("app.services.article.s3_service.upload_image", return_value="https://s3/image.jpg"):
         response = await second_auth_client.post(
             f"/articles/{article_id}/image",
             files={"file": ("image.jpg", b"fake image content", "image/jpeg")}

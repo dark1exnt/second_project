@@ -6,18 +6,18 @@ from unittest.mock import patch
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
 from app.config import settings
-from app.db.session import get_db, asyncsessionfactory
+from app.db.session import get_db
 from app.main import app
 
 
 @pytest.fixture(autouse=True)
 def mock_celery() -> Generator[None, None, None]:
-    with patch("app.api.v1.auth.send_registration_email.delay"):
+    with patch("app.services.auth.send_registration_email.delay"):
         yield
 
 
 @pytest.fixture
-async def client(mock_celery) -> AsyncGenerator[AsyncClient, None]:
+async def client() -> AsyncGenerator[AsyncClient, None]:
     engine = create_async_engine(settings.database_url, poolclass=NullPool)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     
@@ -41,7 +41,7 @@ async def client(mock_celery) -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.fixture
-async def second_client(mock_celery) -> AsyncGenerator[AsyncClient, None]:
+async def second_client() -> AsyncGenerator[AsyncClient, None]:
     engine = create_async_engine(settings.database_url, poolclass=NullPool)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     

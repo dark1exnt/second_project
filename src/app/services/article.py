@@ -92,6 +92,9 @@ class ArticleService:
 
         try:
             updated_article: Article = await self.article_repo.update(article, payload)
+        except IntegrityError:
+            logger.warning("Article update rejected: category not found")
+            raise BadRequestError("Категория не найдена") from None
         except Exception:
             logger.exception("Article update failed")
             raise
