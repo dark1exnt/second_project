@@ -14,11 +14,8 @@ def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
     return UserRepository(db)
 
 
-def get_auth_service(
-    db: AsyncSession = Depends(get_db),
-    user_repo: UserRepository = Depends(get_user_repository),
-) -> AuthService:
-    return AuthService(user_repo=user_repo, session=db)
+def get_auth_service(user_repo: UserRepository = Depends(get_user_repository)) -> AuthService:
+    return AuthService(user_repo=user_repo)
 
 
 def get_article_repository(db: AsyncSession = Depends(get_db)) -> ArticleRepository:
@@ -26,10 +23,9 @@ def get_article_repository(db: AsyncSession = Depends(get_db)) -> ArticleReposit
 
 
 def get_article_service(
-    db: AsyncSession = Depends(get_db),
     article_repo: ArticleRepository = Depends(get_article_repository),
 ) -> ArticleService:
-    return ArticleService(article_repo=article_repo, session=db)
+    return ArticleService(article_repo=article_repo)
 
 
 def get_category_repository(db: AsyncSession = Depends(get_db)) -> CategoryRepository:
@@ -37,7 +33,6 @@ def get_category_repository(db: AsyncSession = Depends(get_db)) -> CategoryRepos
 
 
 def get_category_service(
-    db: AsyncSession = Depends(get_db),
     category_repo: CategoryRepository = Depends(get_category_repository),
 ) -> CategoryService:
-    return CategoryService(category_repo=category_repo, session=db)
+    return CategoryService(category_repo=category_repo)

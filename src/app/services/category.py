@@ -1,7 +1,6 @@
 import uuid
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestError, ConflictError, NotFoundError
 from app.core.logging import app_logger
@@ -11,9 +10,8 @@ from app.schemas.category import CategoryCreate, CategoryUpdate
 
 
 class CategoryService:
-    def __init__(self, category_repo: CategoryRepository, session: AsyncSession) -> None:
+    def __init__(self, category_repo: CategoryRepository) -> None:
         self.category_repo = category_repo
-        self.session = session
 
     async def _get_category_or_404(self, category_id: uuid.UUID) -> Category:
         category: Category | None = await self.category_repo.get_by_id(category_id)

@@ -3,7 +3,6 @@ import uuid
 
 from fastapi import UploadFile
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestError, ForbiddenError, NotFoundError
 from app.core.logging import app_logger
@@ -14,9 +13,8 @@ from app.services.s3 import s3_service
 
 
 class ArticleService:
-    def __init__(self, article_repo: ArticleRepository, session: AsyncSession) -> None:
+    def __init__(self, article_repo: ArticleRepository) -> None:
         self.article_repo = article_repo
-        self.session = session
 
     async def _get_article_or_404(self, article_id: uuid.UUID) -> Article:
         article: Article | None = await self.article_repo.get_by_id(article_id)

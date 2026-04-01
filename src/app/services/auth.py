@@ -1,7 +1,5 @@
 from contextlib import suppress
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.exceptions import BadRequestError, UnauthorizedError
 from app.core.logging import app_logger
 from app.core.security import create_access_token, hash_password, verify_password
@@ -12,9 +10,8 @@ from app.tasks.email import send_registration_email
 
 
 class AuthService:
-    def __init__(self, user_repo: UserRepository, session: AsyncSession) -> None:
+    def __init__(self, user_repo: UserRepository) -> None:
         self.user_repo = user_repo
-        self.session = session
 
     async def register(self, payload: UserRegister) -> User:
         logger = app_logger.bind(email=payload.email, username=payload.username)
