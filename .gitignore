@@ -4,6 +4,7 @@ __pycache__/
 
 # virtual env
 .venv/
+venv/
 
 # pytest
 .pytest_cache/
@@ -22,6 +23,7 @@ __pycache__/
 
 # env
 .env
+*/.env
 
 # logs
 *.log
